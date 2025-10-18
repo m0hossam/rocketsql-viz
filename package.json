@@ -11,8 +11,12 @@
     "build:wasm": "cd ./src && rm -f rocketsql.wasm && cd ../../rocketsql && GOOS=js GOARCH=wasm go build -o rocketsql.wasm ./cmd/wasm && cp rocketsql.wasm ../rocketsql-viz/src"
   },
   "dependencies": {
+    "@codemirror/lang-sql": "^6.10.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@uiw/react-codemirror": "^4.25.2",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "tailwindcss": "^4.1.14"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
