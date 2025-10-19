@@ -8,7 +8,8 @@ import { EditorView } from "@codemirror/view";
 function App() {
   const [code, setCode] = useState("")
   const [results, setResults] = useState("No results yet.")
-  const [pages, setPages] = useState("")
+  const [pages, setPages] = useState([])
+  const [tables, setTables] = useState([])
 
   useEffect(() => {
     const go = new Go();
@@ -16,9 +17,16 @@ function App() {
       .then(result => {
         go.run(result.instance)
         loadSampleData()
-        setPages(getAllPages())
+        updateTablesAndPages()
       })
   }, [])
+
+  function updateTablesAndPages() {
+    const tbls = getAllTables()
+    const pgs = assignTableToPages(tbls, getAllPages())
+    setTables(tbls)
+    setPages(pgs)
+  }
 
   return (
     <div
@@ -36,18 +44,13 @@ function App() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {pages.map((page) => (
               <div
-                key={page.Id}
-                className="border border-gray-200 rounded-lg shadow-sm p-3 bg-gray-50 hover:shadow-md transition-shadow duration-150"
+                key={page.id}
+                className="border-2 border-transparent rounded-lg shadow-sm p-3 bg-gray-50 
+                hover:border-black hover:shadow-md transition-all duration-150 cursor-pointer"
               >
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">ID:</span> {page.Id}
-                </p>
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">Type:</span> {page.Type}
-                </p>
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">Table:</span> ...
-                </p>
+                <p className="text-lg font-bold text-gray-800">{page.id}</p>
+                <p className="text-sm text-gray-700">{page.table ? page.type : "Empty Page"}</p>
+                <p className="text-sm text-blue-600 font-medium">{page.table}</p>
               </div>
             ))}
           </div>
@@ -66,7 +69,7 @@ function App() {
             className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold px-4 py-1.5 rounded-md shadow-sm hover:shadow-md transition-colors duration-150 flex items-center gap-1 cursor-pointer"
             onClick={() => {
               setResults(`${executeSQL(code)}`)
-              setPages(getAllPages())
+              updateTablesAndPages()
             }}
           >
             Run
@@ -102,6 +105,30 @@ function App() {
 
     </div>
   )
+
+  function assignTableToPages(tbls, pgs) {
+    function dfs(node, tableName) {
+      if (!node || !node.id) return;
+
+      // page IDs start at 1, so adjust for 0-based indexing
+      const page = pgs[node.id - 1];
+      if (page) page.table = tableName;
+
+      if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+          dfs(child, tableName);
+        }
+      }
+    }
+
+    for (const tbl of tbls) {
+      if (tbl.root) dfs(tbl.root, tbl.name);
+    }
+
+    // returning a shallow copy to ensure React re-renders
+    return [...pgs];
+  }
+
 
   function loadSampleData() {
     const queries = [
