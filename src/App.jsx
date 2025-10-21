@@ -1,116 +1,153 @@
-import { useEffect, useState } from "react"
-import "./wasm_exec.js"
+import { useEffect, useState } from "react";
+import "./wasm_exec.js";
 import wasmUrl from "./rocketsql.wasm?url";
 import CodeMirror from "@uiw/react-codemirror";
 import { sql } from "@codemirror/lang-sql";
 import { EditorView } from "@codemirror/view";
+import Page from "./components/Page.jsx";
 
 function App() {
-  const [code, setCode] = useState("")
-  const [results, setResults] = useState("No results yet.")
-  const [pages, setPages] = useState([])
-  const [tables, setTables] = useState([])
+  const [code, setCode] = useState("");
+  const [results, setResults] = useState("No results yet.");
+  const [pages, setPages] = useState([]);
+  const [tables, setTables] = useState([]);
+  const [openedPage, setOpenedPage] = useState(null);
+  const [showEditor, setShowEditor] = useState(true);
 
   useEffect(() => {
     const go = new Go();
-    WebAssembly.instantiateStreaming(fetch(wasmUrl), go.importObject)
-      .then(result => {
-        go.run(result.instance)
-        loadSampleData()
-        updateTablesAndPages()
-      })
-  }, [])
+    WebAssembly.instantiateStreaming(fetch(wasmUrl), go.importObject).then(
+      (result) => {
+        go.run(result.instance);
+        loadSampleData();
+        updateTablesAndPages();
+      }
+    );
+  }, []);
 
   function updateTablesAndPages() {
-    const tbls = getAllTables()
-    const pgs = assignTableToPages(tbls, getAllPages())
-    setTables(tbls)
-    setPages(pgs)
+    const tbls = getAllTables();
+    const pgs = assignTableToPages(tbls, getAllPages());
+    if (openedPage !== null) {
+      const updatedPage = pgs.find((pg) => pg.id === openedPage.id)
+      if (updatedPage !== undefined) {
+        setOpenedPage(updatedPage)
+      }
+    }
+    setTables(tbls);
+    setPages(pgs);
   }
 
   return (
     <div
       className="h-screen w-full grid"
       style={{
-        gridTemplateRows: "70% 30%",
+        gridTemplateRows: showEditor ? "70% 30%" : "100%",
         gridTemplateColumns: "60% 40%",
       }}
     >
-      <div className="bg-white border border-gray-300 p-4 overflow-auto">
-        <h2 className="text-xl font-semibold text-gray-800 mb-3">Pages</h2>
-        {pages.length === 0 ? (
-          <p className="text-gray-500 italic">No pages loaded.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {pages.map((page) => (
-              <div
-                key={page.id}
-                className="border-2 border-transparent rounded-lg shadow-sm p-3 bg-gray-50 
-                hover:border-black hover:shadow-md transition-all duration-150 cursor-pointer"
-              >
-                <p className="text-lg font-bold text-gray-800">{page.id}</p>
-                <p className="text-sm text-gray-700">{page.table ? page.type : "Empty Page"}</p>
-                <p className="text-sm text-blue-600 font-medium">{page.table}</p>
-              </div>
-            ))}
+      {openedPage ? (
+        <Page page={openedPage} onClose={() => setOpenedPage(null)} />
+      ) : (
+        <div className="bg-white border border-gray-300 p-4 overflow-auto">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-xl font-semibold text-gray-800">Pages</h2>
+            <button
+              className="text-sm text-gray-700 hover:underline cursor-pointer"
+              onClick={() => setShowEditor(!showEditor)}
+            >
+              {showEditor ? "Hide SQL Editor ↓" : "Show SQL Editor ↑"}
+            </button>
           </div>
-        )}
-      </div>
 
+          {pages.length === 0 ? (
+            <p className="text-gray-500 italic">No pages loaded.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 min-w-[500px] sm:min-w-0">
+                {pages.map((page) => (
+                  <div
+                    key={page.id}
+                    className="border-2 border-transparent rounded-lg shadow-sm p-3 bg-gray-50 
+                  hover:border-black hover:shadow-md transition-all duration-150 cursor-pointer"
+                    onClick={() => setOpenedPage(pages[page.id - 1])}
+                  >
+                    <p className="text-lg font-bold text-gray-800">{page.id}</p>
+                    <p className="text-sm text-gray-700">
+                      {page.table ? page.type : "Empty Page"}
+                    </p>
+                    <p className="text-sm text-blue-600 font-medium">
+                      {page.table}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="bg-green-300 flex items-center justify-center text-xl font-semibold">
         Description
       </div>
 
-      <div className="bg-white grid grid-rows-[auto_1fr] border border-gray-300 min-w-0 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2 bg-gray-100 border-b border-gray-300 shrink-0">
-          <span className="font-semibold text-gray-800 text-lg">SQL Editor</span>
-          <button
-            className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold px-4 py-1.5 rounded-md shadow-sm hover:shadow-md transition-colors duration-150 flex items-center gap-1 cursor-pointer"
-            onClick={() => {
-              setResults(`${executeSQL(code)}`)
-              updateTablesAndPages()
-            }}
-          >
-            Run
-          </button>
-        </div>
+      {/* 👇 Collapsible Editor + Results */}
+      {showEditor && (
+        <>
+          <div className="bg-white grid grid-rows-[auto_1fr] border border-gray-300 min-w-0 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-100 border-b border-gray-300 shrink-0">
+              <span className="font-semibold text-gray-800 text-lg">
+                SQL Editor
+              </span>
+              <button
+                className="bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold px-4 py-1.5 rounded-md shadow-sm hover:shadow-md transition-colors duration-150 flex items-center gap-1 cursor-pointer"
+                onClick={() => {
+                  setResults(`${executeSQL(code)}`);
+                  updateTablesAndPages();
+                }}
+              >
+                Run
+              </button>
+            </div>
 
-        <div className="p-2 bg-gray-50 overflow-auto min-w-0">
-          <CodeMirror
-            value={code}
-            height="100%"
-            extensions={[sql(), EditorView.lineWrapping]}
-            onChange={(value) => setCode(value)}
-            theme="light"
-            basicSetup={{
-              lineNumbers: true,
-              highlightActiveLine: true,
-            }}
-            className="w-full h-full text-sm font-mono"
-          />
-        </div>
-      </div>
+            <div className="p-2 bg-gray-50 overflow-auto min-w-0">
+              <CodeMirror
+                value={code}
+                height="100%"
+                extensions={[sql(), EditorView.lineWrapping]}
+                onChange={(value) => setCode(value)}
+                theme="light"
+                basicSetup={{
+                  lineNumbers: true,
+                  highlightActiveLine: true,
+                }}
+                className="w-full h-full text-sm font-mono"
+              />
+            </div>
+          </div>
 
+          <div className="bg-white grid grid-rows-[auto_1fr] border border-gray-300">
+            <div className="flex items-center px-4 py-2 bg-gray-100 border-b border-gray-300">
+              <span className="font-semibold text-gray-800 text-lg">Results</span>
+            </div>
 
-      <div className="bg-white grid grid-rows-[auto_1fr] border border-gray-300">
-        <div className="flex items-center px-4 py-2 bg-gray-100 border-b border-gray-300">
-          <span className="font-semibold text-gray-800 text-lg">Results</span>
-        </div>
-
-        <div className="p-4 bg-gray-50 text-sm font-mono text-gray-900 whitespace-pre-wrap overflow-auto">
-          {results}
-        </div>
-      </div>
-
+            <div className="p-4 bg-gray-50 text-sm font-mono text-gray-900 whitespace-pre-wrap overflow-auto">
+              {results}
+            </div>
+          </div>
+        </>
+      )}
     </div>
-  )
+  );
+
+  // -----------------------------
+  // Utility functions
+  // -----------------------------
 
   function assignTableToPages(tbls, pgs) {
     function dfs(node, tableName) {
       if (!node || !node.id) return;
 
-      // page IDs start at 1, so adjust for 0-based indexing
       const page = pgs[node.id - 1];
       if (page) page.table = tableName;
 
@@ -125,10 +162,8 @@ function App() {
       if (tbl.root) dfs(tbl.root, tbl.name);
     }
 
-    // returning a shallow copy to ensure React re-renders
     return [...pgs];
   }
-
 
   function loadSampleData() {
     const queries = [
@@ -191,4 +226,4 @@ function App() {
   }
 }
 
-export default App
+export default App;
