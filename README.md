@@ -1,16 +1,13 @@
-# React + Vite
+# RocketSQL File Format Visualizer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This [website](https://m0hossam.github.io/rocketsql-viz/) visualizes the internal structure of the database file used in my own RDBMS ([RocketSQL](https://github.com/m0hossam/rocketsql)).
 
-Currently, two official plugins are available:
+The database file consists of interleaved 512B pages, where each page represents a node in some B+ Tree structure. Each table stored in the database is stored in one B+ Tree. B+ Tree nodes have two types: interior and leaf nodes. Interior nodes contain keys (PKs of the table's rows) and pointers to other nodes/pages. Leaf nodes contain PKs and their corresponding rows. This approach is called **index-organized tables** and is popular in RDBMSs like SQLite and MySQL (InnoDB).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Refer to RocketSQL's [README](https://github.com/m0hossam/rocketsql/blob/main/README.md) to know exactly what type of SQL statements are supported and gain a deeper understanding of the file format.
 
-## React Compiler
+This file format borrows greatly from [SQLite's File Format](https://sqlite.org/fileformat.html).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+This project is heavily inspired by [SQLite's File Format Viewer](https://github.com/invisal/sqlite-internal).
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Also, this was 90% vibe-coded. I suck at frontend.
