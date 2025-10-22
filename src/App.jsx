@@ -57,12 +57,13 @@ function App() {
 
   return (
     <div
-      className="h-screen w-full grid"
+      className="h-screen w-full grid overflow-y-auto min-h-0 min-w-0"
       style={{
-        gridTemplateRows: showEditor ? "70% 30%" : "100%",
+        gridTemplateRows: showEditor ? "1fr 250px" : "1fr",
         gridTemplateColumns: "60% 40%",
       }}
     >
+
       {openedPage ? (
         <Page
           page={openedPage}
