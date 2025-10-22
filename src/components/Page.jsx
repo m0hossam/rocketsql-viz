@@ -1,78 +1,35 @@
+// src/components/Page.jsx
 import { useEffect, useState } from "react";
+import { generateSegments } from "../utils/segments";
 
 export default function Page({ page, onClose }) {
-    const PAGE_SIZE = 512
-    const BLOCK = 30
-    const ACTUAL_WIDTH = 16
-    const WIDTH = ACTUAL_WIDTH * BLOCK
-    const HEIGHT = PAGE_SIZE / ACTUAL_WIDTH * BLOCK
+    const PAGE_SIZE = 512;
+    const BLOCK = 30;
+    const ACTUAL_WIDTH = 16;
 
-    const [segments, setSegments] = useState([])
+    const [groups, setGroups] = useState([]);
+    const [dimensions, setDimensions] = useState({ WIDTH: 0, HEIGHT: 0 });
+    const [selectedId, setSelectedId] = useState(null);
 
     useEffect(() => {
-        const sgs = []
-        sgs.push(newSegment(0, 0, 12 * BLOCK, "Page Header"))
-        let curX = 12 * BLOCK
-        let curY = 0
-        page.cellOffsets?.forEach((offset) => {
-            const sz = 2 * BLOCK
-            if (curX + sz <= WIDTH) {
-                sgs.push(newSegment(curX, curY, sz, `${offset}`))
-                curX += sz
-            } else {
-                let firstSz = WIDTH - curX
-                sgs.push(newSegment(curX, curY, firstSz, `${offset}`))
-                curX = 0
-                curY += BLOCK
-                let remSz = sz - firstSz
-                let nSegs = Math.ceil(remSz / WIDTH)
-                while (nSegs > 1) {
-                    sgs.push(newSegment(curX, curY, WIDTH))
-                    curY += BLOCK
-                    nSegs -= 1
-                    remSz -= WIDTH
-                }
-                sgs.push(newSegment(curX, curY, remSz))
-                curX += remSz
-            }
-            if (curX === WIDTH) {
-                curX = 0
-                curY += BLOCK
-            }
-        })
-        page.cells?.forEach((cell) => {
-            const sz = cell.size * BLOCK
-            curX = (cell.start % ACTUAL_WIDTH) * BLOCK
-            curY = Math.floor(cell.start / ACTUAL_WIDTH) * BLOCK
-            if (curX + sz <= WIDTH) {
-                sgs.push(newSegment(curX, curY, sz, "Cell"))
-            } else {
-                let firstSz = WIDTH - curX
-                sgs.push(newSegment(curX, curY, firstSz, "Cell"))
-                curX = 0
-                curY += BLOCK
-                let remSz = sz - firstSz
-                let nSegs = Math.ceil(remSz / WIDTH)
-                while (nSegs > 1) {
-                    sgs.push(newSegment(curX, curY, WIDTH))
-                    curY += BLOCK
-                    nSegs -= 1
-                    remSz -= WIDTH
-                }
-                sgs.push(newSegment(curX, curY, remSz))
-            }
-        })
-        setSegments(sgs)
-    }, [page])
+        const { groups, WIDTH, HEIGHT } = generateSegments(page, { PAGE_SIZE, BLOCK, ACTUAL_WIDTH });
+        setGroups(groups);
+        setDimensions({ WIDTH, HEIGHT });
+    }, [page]);
 
-    function newSegment(x, y, size, text) {
-        return {
-            x,
-            y,
-            size,
-            text
-        }
-    }
+    const { WIDTH, HEIGHT } = dimensions;
+    const MARGIN = 2;
+
+    const COLORS = {
+        header: { fill: "#5e9ae7", stroke: "#1e3a8a" },
+        pointer: { fill: "#f39654", stroke: "#bc502c" },
+        cell: { fill: "#37c64f", stroke: "#3f7501" },
+        free: { fill: "#afb0af", stroke: "#5b5b5b" },
+    };
+
+    const handleClick = (id) => {
+        setSelectedId((prev) => (prev === id ? null : id));
+    };
 
     return (
         <div className="flex flex-col w-full h-full bg-gray-100 border border-gray-400 rounded-md overflow-hidden">
@@ -89,7 +46,7 @@ export default function Page({ page, onClose }) {
                 </button>
             </div>
 
-            {/* Scrollable vertical SVG area */}
+            {/* Scrollable SVG */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 bg-gray-200">
                 <svg
                     width={WIDTH}
@@ -97,45 +54,42 @@ export default function Page({ page, onClose }) {
                     viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
                     className="border border-gray-600 bg-white shadow-sm"
                 >
-                    {segments.map((seg, idx) => {
-                        let fill = "";
-                        let stroke = "";
-
-                        if (idx === 0) { // Page Header
-                            fill = "#5e9ae7ff";
-                            stroke = "#1e3a8a";
-                        } else if (idx > 0 && idx <= page.numCells) { // Cell Pointers
-                            fill = "#f39654";
-                            stroke = "#bc502c";
-                        } else { // Cells
-                            fill = "#37c64fff";
-                            stroke = "#3f7501ff";
-                        }
+                    {groups.map((group) => {
+                        const { fill, stroke } = COLORS[group.type];
+                        const isSelected = selectedId === group.id;
+                        const highlight = isSelected ? { fillOpacity: 0.6, strokeWidth: 2 } : {};
 
                         return (
-                            <g key={idx}>
-                                <rect
-                                    x={seg.x}
-                                    y={seg.y}
-                                    width={seg.size}
-                                    height={BLOCK}
-                                    fill={fill}
-                                    stroke={stroke}
-                                />
-                                {
-                                    seg.text && (
-                                        <text
-                                            x={seg.x + seg.size / 2}
-                                            y={seg.y + BLOCK / 2}
-                                            textAnchor="middle"
-                                            dominantBaseline="middle"
-                                            fontSize="12"
-                                            fill="black"
-                                            fontFamily="monospace"
-                                        >
-                                            {seg.text}
-                                        </text>)
-                                }
+                            <g
+                                key={group.id}
+                                onClick={() => handleClick(group.id)}
+                                className="cursor-pointer transition-all duration-200"
+                            >
+                                {group.parts.map((p, i) => (
+                                    <rect
+                                        key={i}
+                                        x={p.x + MARGIN}
+                                        y={p.y + MARGIN / 2}
+                                        width={p.size - 2 * MARGIN}
+                                        height={BLOCK - MARGIN}
+                                        fill={fill}
+                                        stroke={stroke}
+                                        {...highlight}
+                                    />
+                                ))}
+                                {group.text && (
+                                    <text
+                                        x={group.parts[0].x + group.parts[0].size / 2}
+                                        y={group.parts[0].y + BLOCK / 2}
+                                        textAnchor="middle"
+                                        dominantBaseline="middle"
+                                        fontSize="12"
+                                        fill="black"
+                                        fontFamily="monospace"
+                                    >
+                                        {group.text}
+                                    </text>
+                                )}
                             </g>
                         );
                     })}
