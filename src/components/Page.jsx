@@ -54,6 +54,19 @@ export default function Page({ page, onClose }) {
                     viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
                     className="border border-gray-600 bg-white shadow-sm"
                 >
+                    <defs>
+                        <marker
+                            id="arrowhead"
+                            markerWidth="6"
+                            markerHeight="6"
+                            refX="5"
+                            refY="3"
+                            orient="auto"
+                            fill="currentColor"
+                        >
+                            <path d="M0,0 L6,3 L0,6 Z" />
+                        </marker>
+                    </defs>
                     {groups.map((group) => {
                         const { fill, stroke } = COLORS[group.type];
                         const isSelected = selectedId === group.id;
@@ -65,6 +78,7 @@ export default function Page({ page, onClose }) {
                                 onClick={() => handleClick(group.id)}
                                 className="cursor-pointer transition-all duration-200"
                             >
+                                <title>{`Offset: ${group.start}\nLength: ${group.length}`}</title>
                                 {group.parts.map((p, i) => (
                                     <rect
                                         key={i}
@@ -93,6 +107,32 @@ export default function Page({ page, onClose }) {
                             </g>
                         );
                     })}
+                    {(() => {
+                        const selectedGroup = groups.find(
+                            (g) => g.id === selectedId && g.type === "pointer"
+                        );
+                        if (!selectedGroup) return null;
+
+                        const x1 = selectedGroup.parts[0].x + selectedGroup.parts[0].size / 2;
+                        const y1 = selectedGroup.parts[0].y + BLOCK;
+
+                        // Compute arrow target (based on group.text = offset)
+                        const x2 = (selectedGroup.text % ACTUAL_WIDTH) * BLOCK;
+                        const y2 = Math.floor(selectedGroup.text / ACTUAL_WIDTH) * BLOCK + BLOCK / 2;
+
+                        return (
+                            <line
+                                x1={x1}
+                                y1={y1}
+                                x2={x2}
+                                y2={y2}
+                                stroke="black"
+                                strokeWidth="3"
+                                strokeDasharray="4"
+                                markerEnd="url(#arrowhead)"
+                            />
+                        );
+                    })()}
                 </svg>
             </div>
         </div>
