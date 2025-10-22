@@ -15,16 +15,18 @@ export default function Page({ page, onClose }) {
         const { groups, WIDTH, HEIGHT } = generateSegments(page, { PAGE_SIZE, BLOCK, ACTUAL_WIDTH });
         setGroups(groups);
         setDimensions({ WIDTH, HEIGHT });
+        console.log(page);
     }, [page]);
 
     const { WIDTH, HEIGHT } = dimensions;
     const MARGIN = 2;
 
     const COLORS = {
-        header: { fill: "#5e9ae7", stroke: "#1e3a8a" },
-        pointer: { fill: "#f39654", stroke: "#bc502c" },
-        cell: { fill: "#37c64f", stroke: "#3f7501" },
-        free: { fill: "#afb0af", stroke: "#5b5b5b" },
+        header: { fill: "#60a5fa", stroke: "#1e40af" },
+        pointer: { fill: "#fbbf24", stroke: "#b45309" },
+        cell: { fill: "#34d399", stroke: "#047857" },
+        free: { fill: "#d1d5db", stroke: "#6b7280" },
+
     };
 
     const handleClick = (id) => {
@@ -47,7 +49,7 @@ export default function Page({ page, onClose }) {
             </div>
 
             {/* Scrollable SVG */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 bg-gray-200">
+            <div className="flex-1 overflow-y-auto overflow-x-auto p-4 bg-gray-200">
                 <svg
                     width={WIDTH}
                     height={HEIGHT}

@@ -5,6 +5,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import { sql } from "@codemirror/lang-sql";
 import { EditorView } from "@codemirror/view";
 import Page from "./components/Page.jsx";
+import Description from "./components/Description.jsx";
 
 function App() {
   const [code, setCode] = useState("");
@@ -12,6 +13,7 @@ function App() {
   const [pages, setPages] = useState([]);
   const [tables, setTables] = useState([]);
   const [openedPage, setOpenedPage] = useState(null);
+  const [selectedObj, setSelectedObj] = useState(null);
   const [showEditor, setShowEditor] = useState(true);
 
   useEffect(() => {
@@ -87,9 +89,7 @@ function App() {
         </div>
       )}
 
-      <div className="bg-green-300 flex items-center justify-center text-xl font-semibold">
-        Description
-      </div>
+      <Description selectedObj={selectedObj} />
 
       {/* 👇 Collapsible Editor + Results */}
       {showEditor && (
