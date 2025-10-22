@@ -59,11 +59,33 @@ export default function Description({ selectedObj }) {
     return (
         <div className="p-6">
             <h2 className="text-lg font-semibold mb-3 text-gray-800">
-                Selected Object
+                {selectedObj.name}
             </h2>
-            <pre className="text-sm bg-gray-100 border border-gray-300 rounded-md p-3 overflow-auto text-gray-900">
-                {JSON.stringify(selectedObj, null, 2)}
-            </pre>
+
+            <table className="min-w-full border border-gray-300 rounded-md text-sm">
+                <tbody>
+                    {Object.entries(selectedObj).slice(1).map(([key, value]) => (
+                        <tr key={key} className="even:bg-gray-50">
+                            <td className="border border-gray-300 font-medium text-gray-700 px-3 py-2 w-1/3">
+                                {toTitleCase(key)}
+                            </td>
+                            <td className="border border-gray-300 text-gray-900 px-3 py-2">
+                                {typeof value === "object"
+                                    ? JSON.stringify(value, null, 2)
+                                    : String(value)}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
 }
+
+function toTitleCase(str) {
+    return str
+        .replace(/([A-Z])/g, " $1")   // insert space before capitals
+        .replace(/^./, (s) => s.toUpperCase()) // capitalize first letter
+        .trim();
+}
+

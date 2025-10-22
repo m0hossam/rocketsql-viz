@@ -14,6 +14,7 @@ function App() {
   const [tables, setTables] = useState([]);
   const [openedPage, setOpenedPage] = useState(null);
   const [selectedObj, setSelectedObj] = useState(null);
+  const [selectedId, setSelectedId] = useState(null)
   const [showEditor, setShowEditor] = useState(true);
 
   useEffect(() => {
@@ -38,6 +39,20 @@ function App() {
     }
     setTables(tbls);
     setPages(pgs);
+    setSelectedId(null)
+    setSelectedObj(null)
+  }
+
+  function updateSelectedItem(id) {
+    setSelectedId((prev) => { // Unselect
+      if (prev === id) {
+        setSelectedObj(null)
+        return null
+      }
+
+      setSelectedObj(createObj(id))
+      return id
+    })
   }
 
   return (
@@ -49,9 +64,18 @@ function App() {
       }}
     >
       {openedPage ? (
-        <Page page={openedPage} onClose={() => setOpenedPage(null)} />
+        <Page
+          page={openedPage}
+          onClose={() => {
+            setOpenedPage(null)
+            setSelectedId(null)
+            setSelectedObj(null)
+          }}
+          handleClick={updateSelectedItem}
+          selectedId={selectedId}
+        />
       ) : (
-        <div className="bg-white border border-gray-300 p-4 overflow-auto">
+        <div className="bg-gray-200 border border-gray-300 p-4 overflow-auto">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-xl font-semibold text-gray-800">Pages</h2>
             <button
@@ -70,7 +94,7 @@ function App() {
                 {pages.map((page) => (
                   <div
                     key={page.id}
-                    className="border-2 border-transparent rounded-lg shadow-sm p-3 bg-gray-50 
+                    className="border-2 border-transparent rounded-lg shadow-md p-3 bg-white
                   hover:border-black hover:shadow-md transition-all duration-150 cursor-pointer"
                     onClick={() => setOpenedPage(pages[page.id - 1])}
                   >
@@ -163,6 +187,43 @@ function App() {
     }
 
     return [...pgs];
+  }
+
+  function createObj(id) {
+    const obj = {}
+    if (id === "header") {
+      obj.name = "Page Header"
+      obj.pageType = openedPage.type
+      obj.offsetOfFirstFreeBlock = openedPage.freeBlocks.length > 0 ? openedPage.freeBlocks[0].start : 0
+      obj.numberOfCells = openedPage.numCells
+      obj.offsetOfCellArray = openedPage.cellArrOff
+      obj.numberOfFragmentedBytes = openedPage.numFragBytes
+      obj.rightmostChildPageNumber = openedPage.lastPtr
+    } else if (id.startsWith("cell-")) {
+      const index = parseInt(id.split("-")[1], 10);
+      const cell = openedPage.cells[index]
+      if (openedPage.type === "Leaf Page") {
+        obj.name = "Leaf Page Cell"
+        obj.key = cell.key
+        obj.row = cell.row
+      } else {
+        obj.name = "Interior Page Cell"
+        obj.key = cell.key
+        obj.pointer = cell.ptr
+      }
+    } else if (id.startsWith("ptr-")) {
+      const index = parseInt(id.split("-")[1], 10);
+      obj.name = "Cell Pointer"
+      obj.cellOffset = openedPage.cellOffsets[index]
+    } else if (id.startsWith("free-")) {
+      const index = parseInt(id.split("-")[1], 10);
+      obj.name = "Free Block"
+      obj.totalSize = openedPage.freeBlocks[index].size
+      obj.offsetOfNextFreeBlock = openedPage.freeBlocks[index].nextOff
+    } else {
+      obj.name = "Unknown";
+    }
+    return obj
   }
 
   function loadSampleData() {

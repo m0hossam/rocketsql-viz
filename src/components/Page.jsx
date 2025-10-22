@@ -2,20 +2,18 @@
 import { useEffect, useState } from "react";
 import { generateSegments } from "../utils/segments";
 
-export default function Page({ page, onClose }) {
+export default function Page({ page, onClose, handleClick, selectedId }) {
     const PAGE_SIZE = 512;
     const BLOCK = 30;
     const ACTUAL_WIDTH = 16;
 
     const [groups, setGroups] = useState([]);
     const [dimensions, setDimensions] = useState({ WIDTH: 0, HEIGHT: 0 });
-    const [selectedId, setSelectedId] = useState(null);
 
     useEffect(() => {
         const { groups, WIDTH, HEIGHT } = generateSegments(page, { PAGE_SIZE, BLOCK, ACTUAL_WIDTH });
         setGroups(groups);
         setDimensions({ WIDTH, HEIGHT });
-        console.log(page);
     }, [page]);
 
     const { WIDTH, HEIGHT } = dimensions;
@@ -27,10 +25,6 @@ export default function Page({ page, onClose }) {
         cell: { fill: "#34d399", stroke: "#047857" },
         free: { fill: "#d1d5db", stroke: "#6b7280" },
 
-    };
-
-    const handleClick = (id) => {
-        setSelectedId((prev) => (prev === id ? null : id));
     };
 
     return (
